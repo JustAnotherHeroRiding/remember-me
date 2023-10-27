@@ -149,7 +149,7 @@ class Board {
                 //const div = document.createElement("div");
                 const block = this.blocks[i][j];
                 const attributes = block.getAttributes();
-                const div = new ElementCreator("div", attributes.width.toString(), attributes.height.toString(), undefined, { backgroundColor: 'black' }, // Style property
+                const div = new ElementCreator("div", attributes.width.toString(), attributes.height.toString(), undefined, { backgroundColor: "black" }, // Style property
                 "block").createElement();
                 //div.style.width = attributes.width.toString().concat("px");
                 //div.style.height = attributes.height.toString().concat("px");
@@ -169,11 +169,8 @@ class Board {
             return;
         }
         // TODO Here we can create the image using the elementCreator again
-        const img = document.createElement("img");
         const attributes = block.getAttributes();
-        img.src = "images/" + attributes.image;
-        img.width = attributes.width;
-        img.height = attributes.height;
+        const img = new ElementCreator("img", attributes.width.toString(), attributes.height.toString(), `images/${attributes.image}`).createElement();
         block.setElement(img);
         const div = block.getElement("DIV");
         const animationEndCallback = () => {
