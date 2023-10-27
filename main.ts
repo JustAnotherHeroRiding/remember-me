@@ -138,31 +138,34 @@ class Board {
     img.width = attributes.width;
     img.height = attributes.height;
     block.setElement(img);
-    block.getElement("DIV")!.appendChild(img);
+    const div = block.getElement("DIV")!;
+    div.appendChild(img);
+    div.classList.add("flip");
     this.openedBlocks.push(block);
     if (this.openedBlocks.length === 2) {
       let match =
         this.openedBlocks[0].getAttributes().image ===
         this.openedBlocks[1].getAttributes().image;
       setTimeout(() => {
-        this.handleOpenedBlocks(match);
+        this.handleOpenPair(match);
       }, 2000);
     }
   }
 
-  handleOpenedBlocks(match: boolean) {
+  handleOpenPair(match: boolean) {
     this.openedBlocks.forEach((block) => {
       //console.log(block.getElement("DIV"));
       //console.log(block.getElement("IMG"));
-      console.log(block)
+      console.log(block);
       if (match) {
+        /* Uncomment these 2 lines to remove the 2 matching divs */
         //block.deleteElement(block.getElement("IMG")!);
         //block.deleteElement(block.getElement("DIV")!);
         block
           .getElement("DIV")
           ?.removeEventListener("click", block.getOpenFunction());
       } else {
-        block.getElement("DIV")?.removeChild(block.getElement("IMG")!);
+        block.deleteElement(block.getElement("IMG")!);
       }
       this.openedBlocks = [];
     });
