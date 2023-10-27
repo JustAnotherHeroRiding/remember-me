@@ -139,8 +139,12 @@ class Board {
     img.height = attributes.height;
     block.setElement(img);
     const div = block.getElement("DIV")!;
-    div.appendChild(img);
     div.classList.add("flip");
+    div.addEventListener("animationend", () => {
+      div.appendChild(img);
+      // Remove the flip class so the animation can be triggered again
+      div.classList.remove("flip");
+    });
     this.openedBlocks.push(block);
     if (this.openedBlocks.length === 2) {
       let match =
@@ -166,6 +170,7 @@ class Board {
           ?.removeEventListener("click", block.getOpenFunction());
       } else {
         block.deleteElement(block.getElement("IMG")!);
+        block.getElement("DIV")?.classList.remove("flip");
       }
       this.openedBlocks = [];
     });
