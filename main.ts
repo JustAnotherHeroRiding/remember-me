@@ -14,7 +14,7 @@ class Block {
   private readonly image: string;
   private imageElement: HTMLImageElement | undefined;
   private divElement: HTMLDivElement | undefined;
-  private openFunction: () => void;
+  private openFunction!: () => void;
 
   constructor(
     name: string,
