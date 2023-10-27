@@ -6,11 +6,18 @@ class Block {
     image;
     imageElement;
     divElement;
-    constructor(name, width, height, image) {
+    openFunction;
+    constructor(name, width, height, image, openFunction) {
         this.name = name;
         this.width = width;
         this.height = height;
         this.image = image;
+    }
+    setOpenFunction(openFunction) {
+        this.openFunction = openFunction;
+    }
+    getOpenFunction() {
+        return this.openFunction;
     }
     getAttributes() {
         return {
@@ -90,7 +97,9 @@ class Board {
                 div.classList.add("block");
                 div.style.backgroundColor = "black";
                 block.setElement(div);
-                div.addEventListener("click", () => this.open(block));
+                const openBlockFunction = () => this.open(block);
+                div.addEventListener("click", openBlockFunction);
+                block.setOpenFunction(openBlockFunction);
                 row?.appendChild(div);
             }
             this.container.appendChild(row);
@@ -112,22 +121,28 @@ class Board {
             let match = this.openedBlocks[0].getAttributes().image ===
                 this.openedBlocks[1].getAttributes().image;
             setTimeout(() => {
-                this.openedBlocks.forEach((block) => {
-                    console.log(block.getElement("DIV"));
-                    console.log(block.getElement("IMG"));
-                    if (match) {
-                        block.deleteElement(block.getElement("IMG"));
-                        block.deleteElement(block.getElement("DIV"));
-                    }
-                    else {
-                        block.getElement("DIV")?.removeChild(block.getElement("IMG"));
-                        //block.getElement("DIV")?.removeEventListener('click', this.open(block));
-                    }
-                    this.openedBlocks = [];
-                });
-                console.log("should remove the blocks");
+                this.handleOpenedBlocks(match);
             }, 2000);
         }
+    }
+    handleOpenedBlocks(match) {
+        this.openedBlocks.forEach((block) => {
+            //console.log(block.getElement("DIV"));
+            //console.log(block.getElement("IMG"));
+            console.log(block);
+            if (match) {
+                //block.deleteElement(block.getElement("IMG")!);
+                //block.deleteElement(block.getElement("DIV")!);
+                block
+                    .getElement("DIV")
+                    ?.removeEventListener("click", block.getOpenFunction());
+            }
+            else {
+                block.getElement("DIV")?.removeChild(block.getElement("IMG"));
+            }
+            this.openedBlocks = [];
+        });
+        console.log("should remove the blocks");
     }
 }
 const gameBoard = new Board(4);
