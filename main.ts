@@ -7,6 +7,73 @@ interface BlockAttributes {
 
 import { fields } from "./possibleImages.js";
 
+class ElementCreator {
+  private readonly name: string;
+  private readonly width: string;
+  private readonly height: string;
+  private readonly image?: string;
+  private readonly className?: string;
+  private readonly style?: Partial<CSSStyleDeclaration>;
+
+  constructor(
+    name: string,
+    width: string,
+    height: string,
+    image?: string,
+    style?: Partial<CSSStyleDeclaration>,
+    className?: string
+  ) {
+    this.name = name;
+    this.width = width;
+    this.height = height;
+    if (image) {
+      this.image = image;
+    }
+    if (style) {
+      this.style = style;
+    }
+    if (className) {
+      this.className = className;
+    }
+  }
+
+  createDiv() {
+    const div = document.createElement("div");
+    div.style.width = this.width + "px";
+    div.style.height = this.height + "px";
+    if (this.className) {
+      div.classList.add(this.className ? this.className : "");
+    }
+    if (this.style) {
+      Object.assign(div.style, this.style);
+    }
+    return div;
+  }
+
+  createImg() {
+    const img = document.createElement("img");
+    img.src = this.image ? this.image : "";
+    img.style.width = this.width + "px";
+    img.style.height = this.height + "px";
+    if (this.className) {
+      img.classList.add(this.className ? this.className : "");
+    }
+    if (this.style) {
+      Object.assign(img.style, this.style);
+    }
+    return img;
+  }
+
+  createElement() {
+    switch (this.name.toUpperCase()) {
+      case "DIV":
+        return this.createDiv();
+      case "IMG":
+        return this.createImg();
+    }
+  }
+}
+
 class Block {
   private readonly name: string;
   private readonly width: number;
@@ -113,13 +180,23 @@ class Board {
       for (let j = 0; j < this.blocks.length; j++) {
         // TODO here we need to create a element creator class
         // to create the will be appended and set in the block
-        const div = document.createElement("div");
+
+        //const div = document.createElement("div");
         const block = this.blocks[i][j];
         const attributes = block.getAttributes();
-        div.style.width = attributes.width.toString().concat("px");
-        div.style.height = attributes.height.toString().concat("px");
-        div.classList.add("block");
-        div.style.backgroundColor = "black";
+
+        const div = new ElementCreator(
+          "div",
+          attributes.width.toString(),
+          attributes.height.toString(),
+          undefined,
+          { backgroundColor: 'black' }, // Style property
+          "block"
+        ).createElement()!!;
+        //div.style.width = attributes.width.toString().concat("px");
+        //div.style.height = attributes.height.toString().concat("px");
+        //div.classList.add("block");
+        //div.style.backgroundColor = "black";
         block.setElement(div);
         const openBlockFunction = () => this.open(block);
         div.addEventListener("click", openBlockFunction);
@@ -182,15 +259,15 @@ class Board {
     );
 
     if (allBlocksOpen) {
-      this.gameOver(true)
+      this.gameOver(true);
     }
   }
 
   gameOver(victory: boolean) {
     if (victory) {
-        console.log("You Won");
+      console.log("You Won");
     } else {
-        console.log("You Lost")
+      console.log("You Lost");
     }
   }
 }
