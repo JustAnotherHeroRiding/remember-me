@@ -111,6 +111,8 @@ class Board {
       const row = document.createElement("div");
       row.classList.add("row");
       for (let j = 0; j < this.blocks.length; j++) {
+        // TODO here we need to create a element creator class
+        // to create the will be appended and set in the block
         const div = document.createElement("div");
         const block = this.blocks[i][j];
         const attributes = block.getAttributes();
@@ -132,6 +134,7 @@ class Board {
     if (this.openedBlocks.length === 2) {
       return;
     }
+    // TODO Here we can create the image using the elementCreator again
     const img = document.createElement("img");
     const attributes = block.getAttributes();
     img.src = "images/" + attributes.image;
@@ -162,7 +165,6 @@ class Board {
     this.openedBlocks.forEach((block) => {
       //console.log(block.getElement("DIV"));
       //console.log(block.getElement("IMG"));
-      console.log(block);
       if (match) {
         /* Uncomment these 2 lines to remove the 2 matching divs */
         //block.deleteElement(block.getElement("IMG")!);
@@ -175,7 +177,21 @@ class Board {
       }
       this.openedBlocks = [];
     });
-    console.log("should remove the blocks");
+    const allBlocksOpen = this.blocks.every((row) =>
+      row.every((block) => block.getElement("IMG") !== undefined)
+    );
+
+    if (allBlocksOpen) {
+      this.gameOver(true)
+    }
+  }
+
+  gameOver(victory: boolean) {
+    if (victory) {
+        console.log("You Won");
+    } else {
+        console.log("You Lost")
+    }
   }
 }
 
