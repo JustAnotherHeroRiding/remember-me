@@ -20,17 +20,35 @@ class Block {
             image: this.image,
         };
     }
-    setImageElement(imageElement) {
-        this.imageElement = imageElement;
+    setElement(element) {
+        switch (element.tagName) {
+            case "DIV":
+                this.divElement = element;
+                break;
+            case "IMG":
+                this.imageElement = element;
+                break;
+        }
     }
-    setDivElement(divElement) {
-        this.divElement = divElement;
+    getElement(elementName) {
+        switch (elementName.toUpperCase()) {
+            case "DIV":
+                return this.divElement;
+            case "IMG":
+                return this.imageElement;
+        }
     }
-    getDivElement() {
-        return this.divElement;
-    }
-    getImgElement() {
-        return this.imageElement;
+    deleteElement(element) {
+        switch (element.tagName) {
+            case "DIV":
+                this.divElement?.remove();
+                break;
+            case "IMG":
+                this.imageElement?.remove();
+                break;
+            default:
+                break;
+        }
     }
 }
 class Board {
@@ -71,7 +89,7 @@ class Board {
                 div.style.height = attributes.height.toString().concat("px");
                 div.classList.add("block");
                 div.style.backgroundColor = "black";
-                block.setDivElement(div);
+                block.setElement(div);
                 div.addEventListener("click", () => this.open(block));
                 row?.appendChild(div);
             }
@@ -87,15 +105,24 @@ class Board {
         img.src = "images/" + attributes.image;
         img.width = attributes.width;
         img.height = attributes.height;
-        block.setImageElement(img);
-        block.getDivElement().appendChild(img);
+        block.setElement(img);
+        block.getElement("DIV").appendChild(img);
         this.openedBlocks.push(block);
         if (this.openedBlocks.length === 2) {
+            let match = this.openedBlocks[0].getAttributes().image ===
+                this.openedBlocks[1].getAttributes().image;
             setTimeout(() => {
                 this.openedBlocks.forEach((block) => {
-                    console.log(block.getDivElement());
-                    console.log(block.getImgElement());
-                    block.getDivElement()?.removeChild(block.getImgElement());
+                    console.log(block.getElement("DIV"));
+                    console.log(block.getElement("IMG"));
+                    if (match) {
+                        block.deleteElement(block.getElement("IMG"));
+                        block.deleteElement(block.getElement("DIV"));
+                    }
+                    else {
+                        block.getElement("DIV")?.removeChild(block.getElement("IMG"));
+                        //block.getElement("DIV")?.removeEventListener('click', this.open(block));
+                    }
                     this.openedBlocks = [];
                 });
                 console.log("should remove the blocks");
