@@ -119,25 +119,40 @@ class Board {
     openedBlocks;
     constructor(size) {
         this.container = document.querySelector(".container");
-        this.blocks = [];
         const addedFields = {};
+        let flatBlocks = [];
+        for (let i = 0; i < size * size; i++) {
+            const field = fields[0];
+            flatBlocks.push(new Block("block", 100, 100, field.concat(".png")));
+            if (addedFields[field] == 1) {
+                addedFields[field] = addedFields[field] + 1;
+                fields.shift();
+            }
+            else {
+                addedFields[field] = 1;
+            }
+        }
+        flatBlocks = this.shuffle(flatBlocks);
+        this.blocks = [];
         for (let i = 0; i < size; i++) {
-            // row
             this.blocks[i] = [];
             for (let j = 0; j < size; j++) {
-                const field = fields[0];
-                this.blocks[i][j] = new Block("block", 100, 100, field.concat(".png"));
-                if (addedFields[field] == 1) {
-                    console.log(addedFields[field]);
-                    addedFields[field] = addedFields[field] + 1;
-                    fields.shift();
-                }
-                else {
-                    addedFields[field] = 1;
-                }
+                this.blocks[i][j] = flatBlocks[i * size + j];
             }
         }
         this.openedBlocks = [];
+    }
+    shuffle(array) {
+        let currentIndex = array.length, randomIndex;
+        while (currentIndex !== 0) {
+            randomIndex = Math.floor(Math.random() * currentIndex);
+            currentIndex--;
+            [array[currentIndex], array[randomIndex]] = [
+                array[randomIndex],
+                array[currentIndex],
+            ];
+        }
+        return array;
     }
     draw() {
         for (let i = 0; i < this.blocks.length; i++) {
@@ -194,9 +209,12 @@ class Board {
             //console.log(block.getElement("DIV"));
             //console.log(block.getElement("IMG"));
             if (match) {
-                /* Uncomment these 2 lines to remove the 2 matching divs */
-                //block.deleteElement(block.getElement("IMG")!);
-                //block.deleteElement(block.getElement("DIV")!);
+                /* Uncomment these lines to remove the 2 matching divs */
+                /* let element = block.getElement("DIV");
+                block.deleteElement(block.getElement("IMG")!);
+                if (element) {
+                  element.style.backgroundColor = "white";
+                } */
                 block
                     .getElement("DIV")
                     ?.removeEventListener("click", block.getOpenFunction());
