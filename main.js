@@ -1,4 +1,44 @@
 import { fields } from "./possibleImages.js";
+class Animation {
+    gameoverMessage;
+    constructor(h2Element) {
+        this.gameoverMessage = h2Element;
+    }
+    showConfetti() {
+        // Number of pieces of confetti to throw
+        const confettiCount = 200;
+        // Array to store the confetti
+        const confettiArray = [];
+        // Create the confetti pieces and add them to the array
+        for (let i = 0; i < confettiCount; i++) {
+            const confetti = document.createElement("div");
+            confetti.classList.add("confetti");
+            confetti.textContent = "🎉";
+            confetti.style.left = `${Math.random() * 100}vw`;
+            confetti.style.animationDuration = `${Math.random() * 2 + 3}s`;
+            confettiArray.push(confetti);
+        }
+        // Function to start the confetti animation
+        const startConfetti = () => {
+            if (this.gameoverMessage) {
+                this.gameoverMessage.textContent = "You Won!";
+            }
+            confettiArray.forEach((confetti) => {
+                document.body.appendChild(confetti);
+            });
+        };
+        // Function to stop the confetti animation
+        const stopConfetti = () => {
+            confettiArray.forEach((confetti) => {
+                confetti.remove();
+            });
+        };
+        // Start the confetti animation
+        startConfetti();
+        // Stop the confetti animation after 5 seconds
+        setTimeout(stopConfetti, 5000);
+    }
+}
 class ElementCreator {
     name;
     width;
@@ -71,6 +111,9 @@ class Block {
     setOpenFunction(openFunction) {
         this.openFunction = openFunction;
     }
+    // Created a single function for opening so that we can later disable the event listener
+    // When disabling an event listener we need to pass the same exact function that was initially passed
+    // Anonymous functions cannot be later disabled
     getOpenFunction() {
         return this.openFunction;
     }
@@ -117,9 +160,12 @@ class Board {
     blocks;
     container;
     openedBlocks;
+    remainingBlocks;
     constructor(size) {
+        this.remainingBlocks = size * size;
         this.container = document.querySelector(".container");
         const addedFields = {};
+        // Creating a 1d array in order to be shuffled later
         let flatBlocks = [];
         for (let i = 0; i < size * size; i++) {
             const field = fields[0];
@@ -132,27 +178,28 @@ class Board {
                 addedFields[field] = 1;
             }
         }
-        flatBlocks = this.shuffle(flatBlocks);
+        flatBlocks = this.shuffleBlocks(flatBlocks);
         this.blocks = [];
         for (let i = 0; i < size; i++) {
             this.blocks[i] = [];
             for (let j = 0; j < size; j++) {
+                // Multiplying i with size to get the current row as we are working with a 1d array
                 this.blocks[i][j] = flatBlocks[i * size + j];
             }
         }
         this.openedBlocks = [];
     }
-    shuffle(array) {
-        let currentIndex = array.length, randomIndex;
+    shuffleBlocks(blocksArray) {
+        let currentIndex = blocksArray.length, randomIndex;
         while (currentIndex !== 0) {
             randomIndex = Math.floor(Math.random() * currentIndex);
             currentIndex--;
-            [array[currentIndex], array[randomIndex]] = [
-                array[randomIndex],
-                array[currentIndex],
+            [blocksArray[currentIndex], blocksArray[randomIndex]] = [
+                blocksArray[randomIndex],
+                blocksArray[currentIndex],
             ];
         }
-        return array;
+        return blocksArray;
     }
     draw() {
         for (let i = 0; i < this.blocks.length; i++) {
@@ -206,8 +253,6 @@ class Board {
     }
     handleOpenPair(match) {
         this.openedBlocks.forEach((block) => {
-            //console.log(block.getElement("DIV"));
-            //console.log(block.getElement("IMG"));
             if (match) {
                 /* Uncomment these lines to remove the 2 matching divs */
                 /* let element = block.getElement("DIV");
@@ -215,6 +260,7 @@ class Board {
                 if (element) {
                   element.style.backgroundColor = "white";
                 } */
+                this.remainingBlocks--;
                 block
                     .getElement("DIV")
                     ?.removeEventListener("click", block.getOpenFunction());
@@ -224,14 +270,16 @@ class Board {
             }
             this.openedBlocks = [];
         });
-        const allBlocksOpen = this.blocks.every((row) => row.every((block) => block.getElement("IMG") !== undefined));
-        if (allBlocksOpen) {
+        console.log(this.remainingBlocks);
+        if (this.remainingBlocks == 0) {
             this.gameOver(true);
         }
     }
     gameOver(victory) {
+        const gameoverMessage = document.getElementById("gameoverMessage");
+        const animation = new Animation(gameoverMessage);
         if (victory) {
-            console.log("You Won");
+            animation.showConfetti();
         }
         else {
             console.log("You Lost");
