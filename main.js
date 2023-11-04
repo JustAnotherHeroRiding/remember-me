@@ -1,107 +1,290 @@
-var fields = ['dolphin', 'lion', 'panda', 'parrot', 'monkey', 'giraffe', 'penguin', 'rabbit'];
-var Block = /** @class */ (function () {
-    function Block(name, width, height, image) {
+import { fields } from "./possibleImages.js";
+class Animation {
+    gameoverMessage;
+    constructor(h2Element) {
+        this.gameoverMessage = h2Element;
+    }
+    showConfetti() {
+        // Number of pieces of confetti to throw
+        const confettiCount = 200;
+        // Array to store the confetti
+        const confettiArray = [];
+        // Create the confetti pieces and add them to the array
+        for (let i = 0; i < confettiCount; i++) {
+            const confetti = document.createElement("div");
+            confetti.classList.add("confetti");
+            confetti.textContent = "🎉";
+            confetti.style.left = `${Math.random() * 100}vw`;
+            confetti.style.animationDuration = `${Math.random() * 2 + 3}s`;
+            confettiArray.push(confetti);
+        }
+        // Function to start the confetti animation
+        const startConfetti = () => {
+            if (this.gameoverMessage) {
+                this.gameoverMessage.textContent = "You Won!";
+            }
+            confettiArray.forEach((confetti) => {
+                document.body.appendChild(confetti);
+            });
+        };
+        // Function to stop the confetti animation
+        const stopConfetti = () => {
+            confettiArray.forEach((confetti) => {
+                confetti.remove();
+            });
+        };
+        // Start the confetti animation
+        startConfetti();
+        // Stop the confetti animation after 5 seconds
+        setTimeout(stopConfetti, 5000);
+    }
+}
+class ElementCreator {
+    name;
+    width;
+    height;
+    image;
+    className;
+    style;
+    constructor(name, width, height, image, style, className) {
+        this.name = name;
+        this.width = width;
+        this.height = height;
+        if (image) {
+            this.image = image;
+        }
+        if (style) {
+            this.style = style;
+        }
+        if (className) {
+            this.className = className;
+        }
+    }
+    createDiv() {
+        const div = document.createElement("div");
+        div.style.width = this.width + "px";
+        div.style.height = this.height + "px";
+        if (this.className) {
+            div.classList.add(this.className ? this.className : "");
+        }
+        if (this.style) {
+            Object.assign(div.style, this.style);
+        }
+        return div;
+    }
+    createImg() {
+        const img = document.createElement("img");
+        img.src = this.image ? this.image : "";
+        img.style.width = this.width + "px";
+        img.style.height = this.height + "px";
+        if (this.className) {
+            img.classList.add(this.className ? this.className : "");
+        }
+        if (this.style) {
+            Object.assign(img.style, this.style);
+        }
+        return img;
+    }
+    createElement() {
+        switch (this.name.toUpperCase()) {
+            case "DIV":
+                return this.createDiv();
+            case "IMG":
+                return this.createImg();
+        }
+    }
+}
+class Block {
+    name;
+    width;
+    height;
+    image;
+    imageElement;
+    divElement;
+    openFunction;
+    constructor(name, width, height, image, openFunction) {
         this.name = name;
         this.width = width;
         this.height = height;
         this.image = image;
     }
-    Block.prototype.getAttributes = function () {
+    setOpenFunction(openFunction) {
+        this.openFunction = openFunction;
+    }
+    // Created a single function for opening so that we can later disable the event listener
+    // When disabling an event listener we need to pass the same exact function that was initially passed
+    // Anonymous functions cannot be later disabled
+    getOpenFunction() {
+        return this.openFunction;
+    }
+    getAttributes() {
         return {
             name: this.name,
             width: this.width,
             height: this.height,
-            image: this.image
+            image: this.image,
         };
-    };
-    Block.prototype.setImageElement = function (imageElement) {
-        this.imageElement = imageElement;
-    };
-    Block.prototype.setDivElement = function (divElement) {
-        this.divElement = divElement;
-    };
-    Block.prototype.getDivElement = function () {
-        return this.divElement;
-    };
-    Block.prototype.getImgElement = function () {
-        return this.imageElement;
-    };
-    return Block;
-}());
-var Board = /** @class */ (function () {
-    function Board(size) {
-        this.container = document.querySelector('.container');
+    }
+    setElement(element) {
+        switch (element.tagName) {
+            case "DIV":
+                this.divElement = element;
+                break;
+            case "IMG":
+                this.imageElement = element;
+                break;
+        }
+    }
+    getElement(elementName) {
+        switch (elementName.toUpperCase()) {
+            case "DIV":
+                return this.divElement;
+            case "IMG":
+                return this.imageElement;
+        }
+    }
+    deleteElement(element) {
+        switch (element.tagName) {
+            case "DIV":
+                this.divElement?.remove();
+                break;
+            case "IMG":
+                this.imageElement?.remove();
+                break;
+            default:
+                break;
+        }
+    }
+}
+class Board {
+    blocks;
+    container;
+    openedBlocks;
+    remainingBlocks;
+    constructor(size) {
+        this.remainingBlocks = size * size;
+        this.container = document.querySelector(".container");
+        const addedFields = {};
+        // Creating a 1d array in order to be shuffled later
+        let flatBlocks = [];
+        for (let i = 0; i < size * size; i++) {
+            const field = fields[0];
+            flatBlocks.push(new Block("block", 100, 100, field.concat(".png")));
+            if (addedFields[field] == 1) {
+                addedFields[field] = addedFields[field] + 1;
+                fields.shift();
+            }
+            else {
+                addedFields[field] = 1;
+            }
+        }
+        flatBlocks = this.shuffleBlocks(flatBlocks);
         this.blocks = [];
-        var addedFields = {};
-        for (var i = 0; i < size; i++) {
-            // row
+        for (let i = 0; i < size; i++) {
             this.blocks[i] = [];
-            for (var j = 0; j < size; j++) {
-                var field = fields[0];
-                this.blocks[i][j] = new Block('block', 100, 100, field.concat('.png'));
-                if (addedFields[field] == 1) {
-                    console.log(addedFields[field]);
-                    addedFields[field] = addedFields[field] + 1;
-                    fields.shift();
-                }
-                else {
-                    addedFields[field] = 1;
-                }
+            for (let j = 0; j < size; j++) {
+                // Multiplying i with size to get the current row as we are working with a 1d array
+                this.blocks[i][j] = flatBlocks[i * size + j];
             }
         }
         this.openedBlocks = [];
     }
-    Board.prototype.draw = function () {
-        var _this = this;
-        for (var i = 0; i < this.blocks.length; i++) {
-            var row = document.createElement('div');
-            row.classList.add('row');
-            var _loop_1 = function (j) {
-                var div = document.createElement('div');
-                var block = this_1.blocks[i][j];
-                var attributes = block.getAttributes();
-                div.style.width = attributes.width.toString().concat("px");
-                div.style.height = attributes.height.toString().concat("px");
-                div.classList.add('block');
-                div.style.backgroundColor = 'black';
-                block.setDivElement(div);
-                div.addEventListener('click', function () { return _this.open(block); });
-                row === null || row === void 0 ? void 0 : row.appendChild(div);
-            };
-            var this_1 = this;
-            for (var j = 0; j < this.blocks.length; j++) {
-                _loop_1(j);
+    shuffleBlocks(blocksArray) {
+        let currentIndex = blocksArray.length, randomIndex;
+        while (currentIndex !== 0) {
+            randomIndex = Math.floor(Math.random() * currentIndex);
+            currentIndex--;
+            [blocksArray[currentIndex], blocksArray[randomIndex]] = [
+                blocksArray[randomIndex],
+                blocksArray[currentIndex],
+            ];
+        }
+        return blocksArray;
+    }
+    draw() {
+        for (let i = 0; i < this.blocks.length; i++) {
+            const row = document.createElement("div");
+            row.classList.add("row");
+            for (let j = 0; j < this.blocks.length; j++) {
+                // TODO here we need to create a element creator class
+                // to create the will be appended and set in the block
+                //const div = document.createElement("div");
+                const block = this.blocks[i][j];
+                const attributes = block.getAttributes();
+                const div = new ElementCreator("div", attributes.width.toString(), attributes.height.toString(), undefined, { backgroundColor: "black" }, // Style property
+                "block").createElement();
+                //div.style.width = attributes.width.toString().concat("px");
+                //div.style.height = attributes.height.toString().concat("px");
+                //div.classList.add("block");
+                //div.style.backgroundColor = "black";
+                block.setElement(div);
+                const openBlockFunction = () => this.open(block);
+                div.addEventListener("click", openBlockFunction);
+                block.setOpenFunction(openBlockFunction);
+                row?.appendChild(div);
             }
             this.container.appendChild(row);
         }
-    };
-    Board.prototype.open = function (block) {
-        var _this = this;
+    }
+    open(block) {
         if (this.openedBlocks.length === 2) {
             return;
         }
-        var img = document.createElement('img');
-        var attributes = block.getAttributes();
-        img.src = 'images/' + attributes.image;
-        img.width = attributes.width;
-        img.height = attributes.height;
-        block.setImageElement(img);
-        block.getDivElement().appendChild(img);
+        // TODO Here we can create the image using the elementCreator again
+        const attributes = block.getAttributes();
+        const img = new ElementCreator("img", attributes.width.toString(), attributes.height.toString(), `images/${attributes.image}`).createElement();
+        block.setElement(img);
+        const div = block.getElement("DIV");
+        const animationEndCallback = () => {
+            div.appendChild(img);
+            div.classList.remove("flip");
+            div.removeEventListener("animationend", animationEndCallback);
+        };
+        div.classList.add("flip");
+        div.addEventListener("animationend", animationEndCallback);
         this.openedBlocks.push(block);
         if (this.openedBlocks.length === 2) {
-            setTimeout(function () {
-                _this.openedBlocks.forEach(function (block) {
-                    var _a;
-                    console.log(block.getDivElement());
-                    console.log(block.getImgElement());
-                    (_a = block.getDivElement()) === null || _a === void 0 ? void 0 : _a.removeChild(block.getImgElement());
-                    _this.openedBlocks = [];
-                });
-                console.log('should remove the blocks');
+            let match = this.openedBlocks[0].getAttributes().image ===
+                this.openedBlocks[1].getAttributes().image;
+            setTimeout(() => {
+                this.handleOpenPair(match);
             }, 2000);
         }
-    };
-    return Board;
-}());
-var gameBoard = new Board(4);
+    }
+    handleOpenPair(match) {
+        this.openedBlocks.forEach((block) => {
+            if (match) {
+                /* Uncomment these lines to remove the 2 matching divs */
+                /* let element = block.getElement("DIV");
+                block.deleteElement(block.getElement("IMG")!);
+                if (element) {
+                  element.style.backgroundColor = "white";
+                } */
+                this.remainingBlocks--;
+                block
+                    .getElement("DIV")
+                    ?.removeEventListener("click", block.getOpenFunction());
+            }
+            else {
+                block.deleteElement(block.getElement("IMG"));
+            }
+            this.openedBlocks = [];
+        });
+        console.log(this.remainingBlocks);
+        if (this.remainingBlocks == 0) {
+            this.gameOver(true);
+        }
+    }
+    gameOver(victory) {
+        const gameoverMessage = document.getElementById("gameoverMessage");
+        const animation = new Animation(gameoverMessage);
+        if (victory) {
+            animation.showConfetti();
+        }
+        else {
+            console.log("You Lost");
+        }
+    }
+}
+const gameBoard = new Board(4);
 gameBoard.draw();
