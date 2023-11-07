@@ -156,7 +156,6 @@ class Board {
   }
 
   openBlock(block: BlockElement) {
-    debugger;
     if (this.openedBlocks.length === this.limit) {
       this.openedBlocks.forEach((b) => b.reset());
       this.openedBlocks = [];
