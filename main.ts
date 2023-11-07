@@ -1,12 +1,4 @@
-interface BlockAttributes {
-  name: string;
-  width: number;
-  height: number;
-  image: string;
-}
-
 import { fields } from "./possibleImages.js";
-
 class Animation {
   private gameoverMessage: HTMLHeadingElement;
 
@@ -54,162 +46,136 @@ class Animation {
   }
 }
 
-class ElementCreator {
-  private readonly name: string;
-  private readonly width: string;
-  private readonly height: string;
-  private readonly image?: string;
-  private readonly className?: string;
-  private readonly style?: Partial<CSSStyleDeclaration>;
-
-  constructor(
-    name: string,
-    width: string,
-    height: string,
-    image?: string,
-    style?: Partial<CSSStyleDeclaration>,
-    className?: string
-  ) {
-    this.name = name;
-    this.width = width;
-    this.height = height;
-    if (image) {
-      this.image = image;
-    }
-    if (style) {
-      this.style = style;
-    }
-    if (className) {
-      this.className = className;
-    }
-  }
-
-  createDiv() {
-    const div = document.createElement("div");
-    div.style.width = this.width + "px";
-    div.style.height = this.height + "px";
-    if (this.className) {
-      div.classList.add(this.className ? this.className : "");
-    }
-    if (this.style) {
-      Object.assign(div.style, this.style);
-    }
-    return div;
-  }
-
-  createImg() {
-    const img = document.createElement("img");
-    img.src = this.image ? this.image : "";
-    img.style.width = this.width + "px";
-    img.style.height = this.height + "px";
-    if (this.className) {
-      img.classList.add(this.className ? this.className : "");
-    }
-    if (this.style) {
-      Object.assign(img.style, this.style);
-    }
-    return img;
-  }
-
-  createElement() {
-    switch (this.name.toUpperCase()) {
-      case "DIV":
-        return this.createDiv();
-      case "IMG":
-        return this.createImg();
-    }
-  }
+enum ElementType {
+  DIV = "div",
+  IMG = "img"
 }
 
-class Block {
+class ImprovedElementCreator {
+
+  static createElement(
+      elementType: ElementType
+  ) {
+    return document.createElement(elementType);
+  }
+
+}
+
+class BlockElement {
+
   private readonly name: string;
   private readonly width: number;
   private readonly height: number;
-  private readonly image: string;
-  private imageElement: HTMLImageElement | undefined;
-  private divElement: HTMLDivElement | undefined;
-  private openFunction!: () => void;
+  private readonly figure: Figure;
+  private readonly div: HTMLDivElement;
+  private readonly onClick?: (block: BlockElement) => void;
 
   constructor(
-    name: string,
-    width: number,
-    height: number,
-    image: string,
-    openFunction: void
+      name: string,
+      width: number,
+      height: number,
+      figure: Figure,
+      onClick: (block: BlockElement) => void
   ) {
     this.name = name;
     this.width = width;
     this.height = height;
-    this.image = image;
+    this.figure = figure;
+    this.onClick = onClick;
+    this.div = this.createBlock();
+    const ref = this;
+    this.div.addEventListener('click', this.click.bind(ref));
   }
 
-  setOpenFunction(openFunction: () => void) {
-    this.openFunction = openFunction;
-  }
-  // Created a single function for opening so that we can later disable the event listener
-  // When disabling an event listener we need to pass the same exact function that was initially passed
-  // Anonymous functions cannot be later disabled
-  getOpenFunction() {
-    return this.openFunction;
-  }
-
-  getAttributes(): BlockAttributes {
-    return {
-      name: this.name,
-      width: this.width,
-      height: this.height,
-      image: this.image,
-    } as BlockAttributes;
+  private createBlock(): HTMLDivElement {
+    const divElement =
+        ImprovedElementCreator.createElement(ElementType.DIV) as HTMLDivElement;
+    divElement.style.width = `${this.width}px`;
+    divElement.style.height = `${this.width}px`;
+    divElement.classList.add("block");
+    return divElement;
   }
 
-  setElement(element: HTMLElement) {
-    switch (element.tagName) {
-      case "DIV":
-        this.divElement = element as HTMLDivElement;
-        break;
-      case "IMG":
-        this.imageElement = element as HTMLImageElement;
-        break;
-    }
+  getDivElementRef() {
+    return this.div;
   }
 
-  getElement(elementName: string) {
-    switch (elementName.toUpperCase()) {
-      case "DIV":
-        return this.divElement;
-      case "IMG":
-        return this.imageElement;
-    }
+  click() {
+    this.onClick && this.onClick(this);
   }
-  deleteElement(element: HTMLElement) {
-    switch (element.tagName) {
-      case "DIV":
-        this.divElement?.remove();
-        break;
-      case "IMG":
-        this.imageElement?.remove();
-        break;
-      default:
-        break;
-    }
+
+  open() {
+    this.div.appendChild(this.figure.getImgElementRef());
   }
+
+  reset() {
+    this.div.removeChild(this.figure.getImgElementRef());
+  }
+
+}
+
+class Figure {
+  private readonly img: HTMLImageElement;
+
+  constructor(link: string) {
+    this.img = ImprovedElementCreator.createElement(ElementType.IMG) as HTMLImageElement;
+    this.img.src = link;
+    this.img.style.width = 'inherit';
+    this.img.style.height = 'inherit';
+  }
+
+  getImgElementRef() {
+    return this.img;
+  }
+
 }
 
 class Board {
-  private readonly blocks: Block[][];
+  private readonly blocks: BlockElement[][];
   private readonly container;
-  private openedBlocks: Block[];
-  private remainingBlocks: number;
+  private limit: number;
+  private openedBlocks: BlockElement[];
+  private boardSize: number;
+  private size: number;
 
   constructor(size: number) {
-    this.remainingBlocks = size * size;
+    this.size = size;
+    this.boardSize = size * size;
     this.container = document.querySelector(".container")!!;
+    this.limit = 2;
+    this.openedBlocks = [];
+    this.blocks = [];
+
+    const blocksArray = this.createBlockArray();
+    for (let i = 0; i < size; i++) {
+      this.blocks[i] = [];
+      for (let j = 0; j < size; j++) {
+        this.blocks[i][j] = blocksArray[i * size + j];
+      }
+    }
+  }
+
+  openBlock(block: BlockElement) {
+    debugger;
+    if (this.openedBlocks.length === this.limit) {
+      this.openedBlocks.forEach((b) => b.reset());
+      this.openedBlocks = [];
+      return;
+    }
+    block.open();
+    this.openedBlocks.push(block);
+  }
+
+  createBlockArray(): BlockElement[] {
+    let blocksArray = [];
     const addedFields: { [key: string]: number } = {};
-    // Creating a 1d array in order to be shuffled later
-    let flatBlocks = [];
-    for (let i = 0; i < size * size; i++) {
+    for (let i = 0; i < this.boardSize; i++) {
       const field = fields[0];
-      flatBlocks.push(new Block("block", 100, 100, field.concat(".png")));
+      const link = `images/${field}.png`
+      const figure = new Figure(link);
+      const block =
+          new BlockElement("block", 100, 100, figure, this.openBlock.bind(this));
+      blocksArray.push(block);
       if (addedFields[field] == 1) {
         addedFields[field] = addedFields[field] + 1;
         fields.shift();
@@ -217,23 +183,12 @@ class Board {
         addedFields[field] = 1;
       }
     }
-
-    flatBlocks = this.shuffleBlocks(flatBlocks);
-
-    this.blocks = [];
-    for (let i = 0; i < size; i++) {
-      this.blocks[i] = [];
-      for (let j = 0; j < size; j++) {
-        // Multiplying i with size to get the current row as we are working with a 1d array
-        this.blocks[i][j] = flatBlocks[i * size + j];
-      }
-    }
-    this.openedBlocks = [];
+    return blocksArray;
   }
 
-  shuffleBlocks(blocksArray: Block[]) {
+  shuffleBlocks(blocksArray: BlockElement[]) {
     let currentIndex = blocksArray.length,
-      randomIndex;
+        randomIndex;
     while (currentIndex !== 0) {
       randomIndex = Math.floor(Math.random() * currentIndex);
       currentIndex--;
@@ -250,99 +205,10 @@ class Board {
       const row = document.createElement("div");
       row.classList.add("row");
       for (let j = 0; j < this.blocks.length; j++) {
-        // TODO here we need to create a element creator class
-        // to create the will be appended and set in the block
-
-        //const div = document.createElement("div");
-        const block = this.blocks[i][j];
-        const attributes = block.getAttributes();
-
-        const div = new ElementCreator(
-          "div",
-          attributes.width.toString(),
-          attributes.height.toString(),
-          undefined,
-          { backgroundColor: "black" }, // Style property
-          "block"
-        ).createElement()!!;
-        //div.style.width = attributes.width.toString().concat("px");
-        //div.style.height = attributes.height.toString().concat("px");
-        //div.classList.add("block");
-        //div.style.backgroundColor = "black";
-        block.setElement(div);
-        const openBlockFunction = () => this.open(block);
-        div.addEventListener("click", openBlockFunction);
-        block.setOpenFunction(openBlockFunction);
-        row?.appendChild(div);
+        const block = this.blocks[i][j].getDivElementRef();
+        row?.appendChild(block);
       }
       this.container.appendChild(row);
-    }
-  }
-
-  open(block: Block) {
-    if (this.openedBlocks.length === 2) {
-      return;
-    }
-    // TODO Here we can create the image using the elementCreator again
-    const attributes = block.getAttributes();
-    const img = new ElementCreator(
-      "img",
-      attributes.width.toString(),
-      attributes.height.toString(),
-      `images/${attributes.image}`
-    ).createElement()!!;
-    block.setElement(img);
-    const div = block.getElement("DIV")!;
-
-    const animationEndCallback = () => {
-      div.appendChild(img);
-      div.classList.remove("flip");
-      div.removeEventListener("animationend", animationEndCallback);
-    };
-    div.classList.add("flip");
-    div.addEventListener("animationend", animationEndCallback);
-    this.openedBlocks.push(block);
-    if (this.openedBlocks.length === 2) {
-      let match =
-        this.openedBlocks[0].getAttributes().image ===
-        this.openedBlocks[1].getAttributes().image;
-      setTimeout(() => {
-        this.handleOpenPair(match);
-      }, 2000);
-    }
-  }
-
-  handleOpenPair(match: boolean) {
-    this.openedBlocks.forEach((block) => {
-      if (match) {
-        /* Uncomment these lines to remove the 2 matching divs */
-        /* let element = block.getElement("DIV");
-        block.deleteElement(block.getElement("IMG")!);
-        if (element) {
-          element.style.backgroundColor = "white";
-        } */
-        this.remainingBlocks--;
-        block
-          .getElement("DIV")
-          ?.removeEventListener("click", block.getOpenFunction());
-      } else {
-        block.deleteElement(block.getElement("IMG")!);
-      }
-      this.openedBlocks = [];
-    });
-    console.log(this.remainingBlocks);
-    if (this.remainingBlocks == 0) {
-      this.gameOver(true);
-    }
-  }
-
-  gameOver(victory: boolean) {
-    const gameoverMessage = document.getElementById("gameoverMessage");
-    const animation = new Animation(gameoverMessage as HTMLHeadingElement);
-    if (victory) {
-      animation.showConfetti();
-    } else {
-      console.log("You Lost");
     }
   }
 }
